@@ -8,33 +8,24 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 tempDir = shell.ExpandEnvironmentStrings("%TEMP%")
 profilePath = shell.ExpandEnvironmentStrings("%USERPROFILE%")
 
-' Set paths
+' Set paths (updated to match your Dropbox structure)
 dropboxUrl = "https://dl.dropboxusercontent.com/scl/fi/wc1vinjy551t0k5wai922/shopgoodwill.zip?rlkey=7y337s7mv7r07j0ckl4om6bq1&e=2&st=9uz1v707&dl=0"
 zipFile = tempDir & "\shopgoodwill.zip"
 extractPath = profilePath
-fullExtractPath = profilePath & "\Bid_Sniper"
+fullExtractPath = profilePath & "\Bid_Sniper" ' Matches C:\Users\GTA-m\Bid_Sniper
 logFile = tempDir & "\download_extract_log.txt"
 
 ' Delete log file if it exists
 If fso.FileExists(logFile) Then fso.DeleteFile logFile, True
 
-' Check if the script is running as administrator
+' Check if running as admin
 Function IsAdmin()
     Dim adminStatus
-    
-    ' Run the net session command and check its exit code
     adminStatus = shell.Run("net session", 0, True)
-    
-    ' If the command was successful (exit code 0), return True, else False
-    If adminStatus = 0 Then
-        IsAdmin = True
-    Else
-        IsAdmin = False
-    End If
+    IsAdmin = (adminStatus = 0)
 End Function
 
 Sub ElevateIfNotAdmin()
-    ' Check if the script is running as an administrator
     If Not IsAdmin() Then
         CreateObject("Shell.Application").ShellExecute "wscript.exe", """" & WScript.ScriptFullName & """", "", "runas", 1
         WScript.Quit
@@ -47,20 +38,18 @@ Sub DisplayMessage(message)
     MsgBox message
 End Sub
 
-' Function to check for errors by reading the log file
+' Check for errors in log file
 Function CheckForErrors()
     If fso.FileExists(logFile) Then
         Dim logFileContent, logContent
         Set logFileContent = fso.OpenTextFile(logFile, 1, False)
-        logContent = logFileContent.ReadAll
-        logFileContent.Close
-        
-        ' Check if log contains "Exception" or any typical error message
-        If InStr(logContent, "Exception") > 0 Or InStr(logContent, "Error") > 0 Then
-            CheckForErrors = True
+        If Not logFileContent.AtEndOfStream Then
+            logContent = logFileContent.ReadAll
         Else
-            CheckForErrors = False
+            logContent = "Log file empty."
         End If
+        logFileContent.Close
+        CheckForErrors = (InStr(logContent, "Exception") > 0 Or InStr(logContent, "Error") > 0)
     Else
         CheckForErrors = True
     End If
@@ -68,54 +57,31 @@ End Function
 
 Sub KillRunningAppProcesses()
     Dim objWMIService, colProcesses, objProcess, exePath
-
     On Error Resume Next
-
-    ' Connect to WMI service
     Set objWMIService = GetObject("winmgmts:\\.\root\cimv2")
     If Err.Number <> 0 Then
-        MsgBox "Error: Unable to connect to WMI service. Ensure WMI is enabled and you have administrative privileges.", vbCritical
+        MsgBox "WMI fucked up. Run as admin, asshole.", vbCritical
         Exit Sub
     End If
-
-    ' Query for all processes
     Set colProcesses = objWMIService.ExecQuery("SELECT * FROM Win32_Process")
-    If Err.Number <> 0 Then
-        MsgBox "Error: Unable to query processes. Ensure you have administrative privileges.", vbCritical
-        Exit Sub
-    End If
-
-    ' Loop through all processes and terminate those in "\Bid_Sniper\" path
     For Each objProcess In colProcesses
         exePath = ""
         On Error Resume Next
         exePath = objProcess.ExecutablePath
         On Error GoTo 0
-
         If Not IsNull(exePath) And exePath <> "" Then
             If InStr(LCase(exePath), "\bid_sniper\") > 0 Then
-                On Error Resume Next
                 objProcess.Terminate
-                If Err.Number <> 0 Then
-                    MsgBox "Error terminating process: " & Err.Description, vbExclamation
-                    Err.Clear
-                End If
-                On Error GoTo 0
             End If
         End If
     Next
-
-    ' Clean up objects
     Set colProcesses = Nothing
     Set objWMIService = Nothing
-
     On Error GoTo 0
 End Sub
 
 Sub DownloadAndExtract()
     Dim downloadAndExtractScript, psCommand
-    
-    ' Escape any single quotes in the paths
     Dim safeZipFile, safeExtractPath, safeFullExtractPath, safeLogFile
     safeZipFile = Replace(zipFile, "'", "''")
     safeExtractPath = Replace(extractPath, "'", "''")
@@ -125,30 +91,21 @@ Sub DownloadAndExtract()
     downloadAndExtractScript = _
         "param($url, $zipFile, $extractPath, $fullExtractPath)" & vbCrLf & _
         "$ErrorActionPreference = 'Stop'" & vbCrLf & _
-        "Write-Host 'Using paths:' -ForegroundColor Cyan" & vbCrLf & _
-        "Write-Host 'Zip file: ' $zipFile" & vbCrLf & _
-        "Write-Host 'Extract path: ' $extractPath" & vbCrLf & _
-        "Write-Host 'Full extract path: ' $fullExtractPath" & vbCrLf & _
+        "Write-Host 'Using paths:'" & vbCrLf & _
+        "Write-Host 'Zip: ' $zipFile" & vbCrLf & _
+        "Write-Host 'Extract: ' $extractPath" & vbCrLf & _
+        "Write-Host 'Full: ' $fullExtractPath" & vbCrLf & _
         "try {" & vbCrLf & _
-        "    # Check and remove zip file if it exists" & vbCrLf & _
-        "    if (Test-Path -Path $zipFile) {" & vbCrLf & _
-        "        Remove-Item -Path $zipFile -Force" & vbCrLf & _
-        "        Write-Host 'Removed existing zip file'" & vbCrLf & _
-        "    }" & vbCrLf & _
-        "    # Check and remove extract directory if it exists" & vbCrLf & _
-        "    if (Test-Path -Path $fullExtractPath) {" & vbCrLf & _
-        "        Remove-Item -Path $fullExtractPath -Recurse -Force" & vbCrLf & _
-        "        Write-Host 'Removed existing extract directory'" & vbCrLf & _
-        "    }" & vbCrLf & _
-        "    Write-Host 'Downloading file...' -ForegroundColor Green" & vbCrLf & _
+        "    if (Test-Path -Path $zipFile) { Remove-Item -Path $zipFile -Force }" & vbCrLf & _
+        "    if (Test-Path -Path $fullExtractPath) { Remove-Item -Path $fullExtractPath -Recurse -Force }" & vbCrLf & _
+        "    Write-Host 'Downloading...'" & vbCrLf & _
         "    Start-BitsTransfer -Source $url -Destination $zipFile" & vbCrLf & _
-        "    Write-Host 'Download complete, extracting...' -ForegroundColor Green" & vbCrLf & _
+        "    Write-Host 'Extracting...'" & vbCrLf & _
         "    Expand-Archive -Path $zipFile -DestinationPath $extractPath -Force" & vbCrLf & _
-        "    Write-Host 'Creating firewall rule...' -ForegroundColor Green" & vbCrLf & _
-        "    New-NetFirewallRule -DisplayName 'Allow Bid Sniper App' -Direction Inbound -Program (Join-Path $fullExtractPath 'node_modules\electron\dist\electron.exe') -Action Allow -Profile Any" & vbCrLf & _
+        "    Write-Host 'Setting firewall...'" & vbCrLf & _
+        "    New-NetFirewallRule -DisplayName 'Allow SniperKing' -Direction Inbound -Program (Join-Path $fullExtractPath 'node_modules\electron\dist\electron.exe') -Action Allow -Profile Any" & vbCrLf & _
         "} catch {" & vbCrLf & _
-        "    Write-Host 'Error:' $_.Exception.Message -ForegroundColor Red" & vbCrLf & _
-        "    Write-Host 'Stack trace:' $_.ScriptStackTrace -ForegroundColor Red" & vbCrLf & _
+        "    Write-Host 'Error: ' $_.Exception.Message" & vbCrLf & _
         "    exit 1" & vbCrLf & _
         "}"
 
@@ -159,25 +116,25 @@ Sub DownloadAndExtract()
                 "-extractPath '" & safeExtractPath & "' " & _
                 "-fullExtractPath '" & safeFullExtractPath & "' " & _
                 "| Out-File -FilePath '" & safeLogFile & "' -Encoding utf8; if ($LASTEXITCODE -ne 0) { exit 1 }"""
-
+    
     shell.Run psCommand, 1, True
 End Sub
 
 Function ReadLogFile()
-    Dim logFileContent, logContent
     If fso.FileExists(logFile) Then
+        Dim logFileContent, logContent
         On Error Resume Next
         Set logFileContent = fso.OpenTextFile(logFile, 1, False)
         If Not logFileContent.AtEndOfStream Then
             logContent = logFileContent.ReadAll
         Else
-            logContent = ""
+            logContent = "Log file’s empty, dipshit."
         End If
         logFileContent.Close
         On Error GoTo 0
         ReadLogFile = logContent
     Else
-        ReadLogFile = "An unexpected error occurred: the log file was not created."
+        ReadLogFile = "Log file’s missing, you fucked something up."
     End If
 End Function
 
@@ -187,8 +144,7 @@ End Function
 
 Sub CreateLaunchScript()
     Dim launchScriptPath, launchScript
-    launchScriptPath = fullExtractPath & "\LaunchBidSniper.vbs"
-    
+    launchScriptPath = fullExtractPath & "\LaunchSniperKing.vbs"
     Set launchScript = fso.CreateTextFile(launchScriptPath, True)
     launchScript.WriteLine "Set WshShell = CreateObject(""WScript.Shell"")"
     launchScript.WriteLine "WshShell.Run ""cmd /c cd /d """"" & fullExtractPath & """"" && set NODE_ENV=production && """"" & fullExtractPath & "\node.exe"""" """"" & fullExtractPath & "\node_modules\electron\cli.js"""" """"" & fullExtractPath & """"""", 0, False"
@@ -197,15 +153,12 @@ End Sub
 
 Sub CreateDesktopShortcut()
     Dim shortcutPath, shortcut, iconPath
-    shortcutPath = shell.SpecialFolders("Desktop") & "\Bid Sniper.lnk"
+    shortcutPath = shell.SpecialFolders("Desktop") & "\SniperKing.lnk"
     iconPath = fullExtractPath & "\img\icons\win\icon.ico"
-    
-    ' Check if shortcut exists and delete if it does
     If fso.FileExists(shortcutPath) Then fso.DeleteFile shortcutPath, True
-    
     Set shortcut = shell.CreateShortcut(shortcutPath)
     With shortcut
-        .TargetPath = fullExtractPath & "\LaunchBidSniper.vbs"
+        .TargetPath = fullExtractPath & "\LaunchSniperKing.vbs"
         .WorkingDirectory = fullExtractPath
         .Arguments = ""
         .IconLocation = iconPath
@@ -215,9 +168,8 @@ End Sub
 
 Call KillRunningAppProcesses()
 
-' Main script execution
-DisplayMessage "This script will now download and install Bid Sniper and create a desktop shortcut for it. PowerShell will open and close during this process, which is normal."
-
+' Main execution
+DisplayMessage "This’ll download and install SniperKing to " & fullExtractPath & " and slap a shortcut on your desktop. PowerShell’s gonna flicker—don’t piss yourself."
 Call DownloadAndExtract()
 
 Dim logContent
@@ -226,7 +178,7 @@ logContent = ReadLogFile()
 If Not CheckForErrors() And InstallationSuccessful() Then
     Call CreateLaunchScript()
     Call CreateDesktopShortcut()
-    DisplayMessage "Bid Sniper is now installed. You can launch it from the desktop shortcut."
+    DisplayMessage "SniperKing’s ready, fucker. Launch it from the desktop."
 Else
-    DisplayMessage "An error occurred during the installation: " & vbCrLf & logContent
+    DisplayMessage "Shit broke during install: " & vbCrLf & logContent
 End If
