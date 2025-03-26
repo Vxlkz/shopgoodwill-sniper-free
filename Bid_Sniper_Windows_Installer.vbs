@@ -9,7 +9,7 @@ tempDir = shell.ExpandEnvironmentStrings("%TEMP%")
 profilePath = shell.ExpandEnvironmentStrings("%USERPROFILE%")
 
 ' Set paths (updated to match your Dropbox structure)
-dropboxUrl = "https://dl.dropboxusercontent.com/scl/fi/wc1vinjy551t0k5wai922/shopgoodwill.zip?rlkey=7y337s7mv7r07j0ckl4om6bq1&st=enagqzb3&dl=0"
+dropboxUrl = "https://dl.dropboxusercontent.com/scl/fi/wc1vinjy551t0k5wai922/shopgoodwill.zip?rlkey=7y337s7mv7r07j0ckl4om6bq1&st=98b1mcrw&dl=0"
 zipFile = tempDir & "\shopgoodwill.zip"
 extractPath = profilePath
 fullExtractPath = profilePath & "\Bid_Sniper" ' Matches C:\Users\GTA-m\Bid_Sniper
