@@ -9,10 +9,10 @@ tempDir = shell.ExpandEnvironmentStrings("%TEMP%")
 profilePath = shell.ExpandEnvironmentStrings("%USERPROFILE%")
 
 ' Set paths
-dropboxUrl = "https://dl.dropboxusercontent.com/scl/fi/0tx8dtk5iqkyp8g5iebk7/Bid_Sniper_win32.zip?rlkey=izl1nt0ithhhmx7vvh00c4n68&dl=1&raw=1"
-zipFile = tempDir & "\Bid_Sniper.zip"
+dropboxUrl = "https://dl.dropboxusercontent.com/scl/fi/wc1vinjy551t0k5wai922/shopgoodwill.zip?rlkey=7y337s7mv7r07j0ckl4om6bq1&e=2&st=9uz1v707&dl=0"
+zipFile = tempDir & "\shopgoodwill.zip"
 extractPath = profilePath
-fullExtractPath = profilePath & "\Bid_Sniper"
+fullExtractPath = profilePath & "\shopgoodwill"
 logFile = tempDir & "\download_extract_log.txt"
 
 ' Delete log file if it exists
@@ -85,7 +85,7 @@ Sub KillRunningAppProcesses()
         Exit Sub
     End If
 
-    ' Loop through all processes and terminate those in "\Bid_Sniper\" path
+    ' Loop through all processes and terminate those in "\shopgoodwill\" path
     For Each objProcess In colProcesses
         exePath = ""
         On Error Resume Next
@@ -93,7 +93,7 @@ Sub KillRunningAppProcesses()
         On Error GoTo 0
 
         If Not IsNull(exePath) And exePath <> "" Then
-            If InStr(LCase(exePath), "\bid_sniper\") > 0 Then
+            If InStr(LCase(exePath), "\shopgoodwill\") > 0 Then
                 On Error Resume Next
                 objProcess.Terminate
                 If Err.Number <> 0 Then
