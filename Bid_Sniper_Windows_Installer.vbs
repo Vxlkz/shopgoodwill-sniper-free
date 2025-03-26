@@ -103,7 +103,7 @@ Sub DownloadAndExtract()
         "    Write-Host 'Extracting...'" & vbCrLf & _
         "    Expand-Archive -Path $zipFile -DestinationPath $extractPath -Force" & vbCrLf & _
         "    Write-Host 'Setting firewall...'" & vbCrLf & _
-        "    New-NetFirewallRule -DisplayName 'Allow SniperKing' -Direction Inbound -Program (Join-Path $fullExtractPath 'node_modules\electron\dist\electron.exe') -Action Allow -Profile Any" & vbCrLf & _
+        "    New-NetFirewallRule -DisplayName 'Allow Goodwill Sniper' -Direction Inbound -Program (Join-Path $fullExtractPath 'node_modules\electron\dist\electron.exe') -Action Allow -Profile Any" & vbCrLf & _
         "} catch {" & vbCrLf & _
         "    Write-Host 'Error: ' $_.Exception.Message" & vbCrLf & _
         "    exit 1" & vbCrLf & _
@@ -144,7 +144,7 @@ End Function
 
 Sub CreateLaunchScript()
     Dim launchScriptPath, launchScript
-    launchScriptPath = fullExtractPath & "\LaunchSniperKing.vbs"
+    launchScriptPath = fullExtractPath & "\LaunchGoodwill Sniper.vbs"
     Set launchScript = fso.CreateTextFile(launchScriptPath, True)
     launchScript.WriteLine "Set WshShell = CreateObject(""WScript.Shell"")"
     launchScript.WriteLine "WshShell.Run ""cmd /c cd /d """"" & fullExtractPath & """"" && set NODE_ENV=production && """"" & fullExtractPath & "\node.exe"""" """"" & fullExtractPath & "\node_modules\electron\cli.js"""" """"" & fullExtractPath & """"""", 0, False"
@@ -153,12 +153,12 @@ End Sub
 
 Sub CreateDesktopShortcut()
     Dim shortcutPath, shortcut, iconPath
-    shortcutPath = shell.SpecialFolders("Desktop") & "\SniperKing.lnk"
+    shortcutPath = shell.SpecialFolders("Desktop") & "\Goodwill Sniper.lnk"
     iconPath = fullExtractPath & "\img\icons\win\icon.ico"
     If fso.FileExists(shortcutPath) Then fso.DeleteFile shortcutPath, True
     Set shortcut = shell.CreateShortcut(shortcutPath)
     With shortcut
-        .TargetPath = fullExtractPath & "\LaunchSniperKing.vbs"
+        .TargetPath = fullExtractPath & "\LaunchGoodwill Sniper.vbs"
         .WorkingDirectory = fullExtractPath
         .Arguments = ""
         .IconLocation = iconPath
@@ -169,7 +169,7 @@ End Sub
 Call KillRunningAppProcesses()
 
 ' Main execution
-DisplayMessage "This’ll download and install SniperKing to " & fullExtractPath & " and slap a shortcut on your desktop. PowerShell’s gonna flicker—don’t piss yourself."
+DisplayMessage "This’ll download and install Goodwill Sniper to " & fullExtractPath & " and slap a shortcut on your desktop. PowerShell’s gonna flicker—don’t piss yourself."
 Call DownloadAndExtract()
 
 Dim logContent
@@ -178,7 +178,7 @@ logContent = ReadLogFile()
 If Not CheckForErrors() And InstallationSuccessful() Then
     Call CreateLaunchScript()
     Call CreateDesktopShortcut()
-    DisplayMessage "SniperKing’s ready, fucker. Launch it from the desktop."
+    DisplayMessage "Goodwill Sniper’s ready, fucker. Launch it from the desktop."
 Else
     DisplayMessage "Shit broke during install: " & vbCrLf & logContent
 End If
